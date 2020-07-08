@@ -7,7 +7,7 @@ https://tinyurl.com/yaxh4tv5
 
 ## IFNg RNA-seq and ATAC-seq signal and promoter-enhancer interactions
 
-https://tinyurl.com/y7ghtk7w
+https://tinyurl.com/y6uzkmq6
 
 ## scATAC-seq clustering and dimension reduction UMAP
 
