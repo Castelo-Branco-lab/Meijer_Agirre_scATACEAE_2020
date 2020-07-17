@@ -1,0 +1,779 @@
+---
+title: "Meijer_Agirre_SCATACEAE.Rmd"
+author: "Eneritz"
+date: "3/03/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+ the aggregate including the failed sample (EAE4)---> is removed
+   FOLLOW THE SCATAC_10x_EAE_aggr_CLUSTERING 
+   ###cellrangetATAC v1.2 count and aggr
+   
+
+```{r}
+    library(Seurat)
+    library(ggplot2)
+    library(Signac)
+
+```
+```{r}
+   
+ counts <- Read10X_h5(filename = "/home/eneritz/KIshared/Molekylär\ Neurobiologi/Castelo-Branco/NGSDATA/SATACSEQ_EAE_23.04.19/SATACSEQ_EAE_reseq_14.06.19/Processed_data/CR12_22.11.19/AGGR_MM_10XATAC_CR12_V2/outs/filtered_peak_bc_matrix.h5")
+
+
+metadata <- read.csv(
+  file = "/home/eneritz/KIshared/Molekylär\ Neurobiologi/Castelo-Branco/NGSDATA/SATACSEQ_EAE_23.04.19/SATACSEQ_EAE_reseq_14.06.19/Processed_data/CR12_22.11.19/AGGR_MM_10XATAC_CR12_V2/singlecell_metadata_CR12.csv" ,
+  header = TRUE,
+  row.names = 1
+)
+ 
+EAE_AGGR_seurat_12 <- CreateSeuratObject(
+  counts = counts,
+  assay = 'peaks',
+  project = 'ATAC',
+  min.cells = 1,
+  meta.data = metadata
+)
+
+#####in monod:
+load("/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/SIGNAC/EAE_AGGR_seurat_CR12.Robj")
+
+fragment.path <- '/data/proj/GCB_EA/Cellranger_ATAC/cellranger-atac-1.2.0/AGGR_MM_10XATAC_CR12_V2/outs/fragments.tsv.gz'
+
+EAE_AGGR_seurat_12 <- SetFragments(
+  object = EAE_AGGR_seurat_12 ,
+  file = fragment.path
+)
+
+file.exists(fragment.path)
+file.exists(paste0(fragment.path, '.tbi'))
+
+fragment_file_filtered <- "/home/eneritz/fragments_file3.tsv"
+index = (paste0(fragment.path, '.tbi'))
+
+#FilterFragments(
+#  fragment.path = fragment.path,
+#  cells = colnames(EAE_AGGR_seurat_12),
+#  index = (paste0(fragment.path, '.tbi')) , 
+#  output.path = fragment_file_filtered
+#)
+
+
+#not using it
+#EAE_AGGR_seurat_12 <- SetFragments(object = EAE_AGGR_seurat_12 , file = "/home/eneritz/fragments_file.tsv.bgz" )
+
+###and move it to monod
+#save( EAE_AGGR_seurat_12 , file= "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/SIGNAC/EAE_AGGR__seurat_CR12.Robj")
+ 
+```
+```{r}
+
+
+EAE_AGGR_seurat_12  <- NucleosomeSignal(object = EAE_AGGR_seurat_12)
+
+
+fragment.path <- '/data/proj/GCB_EA/Cellranger_ATAC/cellranger-atac-1.2.0/AGGR_MM_10XATAC_CR12_V2/outs/fragments.tsv.gz'
+
+
+EAE_AGGR_seurat_12  <- SetFragments(
+  object = EAE_AGGR_seurat_12  ,
+  file = fragment.path
+)
+
+
+EAE_AGGR_seurat_12  $pct_reads_in_peaks <- EAE_AGGR_seurat_12  $peak_region_fragments / EAE_AGGR_seurat_12  $nCount_peaks * 100
+EAE_AGGR_seurat_12  $blacklist_ratio <- EAE_AGGR_seurat_12  $blacklist_region_fragments / EAE_AGGR_seurat_12  $peak_region_fragments
+
+
+
+###this part in uppmax  : /proj/uppstore2017150/private/eneritz/SCATAC_EAE_10X_23.04.19/SIGNAC
+#signac_part1.R
+#EAE_ATAC_1.sh
+#######################
+
+plot1 <- VlnPlot(
+  object = EAE_AGGR_seurat_12  , features = c('pct_reads_in_peaks', 'blacklist_ratio', 'nucleosome_signal'),
+  pt.size = 0) + NoLegend()
+
+plot2_a <- VlnPlot(
+  object = EAE_AGGR_seurat_12  ,
+ 
+    features = 'peak_region_fragments',
+  pt.size = 0, log = TRUE) + NoLegend()
+
+plot2_b <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'nucleosome_signal', pt.size = 0) + NoLegend()
+plot2_c <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'blacklist_ratio', pt.size = 0) + NoLegend()
+plot2 <- CombinePlots(plots = list(plot2_a,plot2_b,plot2_c), ncol = 3)
+
+CombinePlots(list(plot1,plot2),ncol = 1)
+# /home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X.eps
+
+#setEPS()
+#postscript("/home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X_v2.eps" ,  width=10, height=10 )
+#CombinePlots(list(plot1,plot2),ncol = 1)
+#dev.off()
+
+Idents(object = EAE_AGGR_seurat_12  ) <- "condition"
+plot1 <- VlnPlot(
+  object = EAE_AGGR_seurat_12  , features = c('pct_reads_in_peaks', 'blacklist_ratio', 'nucleosome_signal'),
+  pt.size = 0) + NoLegend()
+
+plot2_a <- VlnPlot(
+  object = EAE_AGGR_seurat_12  ,
+ 
+    features = 'peak_region_fragments',
+  pt.size = 0, log = TRUE) + NoLegend()
+
+plot2_b <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'nucleosome_signal', pt.size = 0) + NoLegend()
+plot2_c <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'blacklist_ratio', pt.size = 0) + NoLegend()
+plot2 <- CombinePlots(plots = list(plot2_a,plot2_b,plot2_c), ncol = 3)
+
+CombinePlots(list(plot1,plot2),ncol = 1)
+
+
+#setEPS()
+#postscript("/home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X_condition_v2.eps" , width=10, height=10 )
+#CombinePlots(list(plot1,plot2),ncol = 1)
+#dev.off()
+
+Idents(object = EAE_AGGR_seurat_12  ) <- "ATAC"
+
+EAE_AGGR_seurat_12  $nucleosome_group <- ifelse(EAE_AGGR_seurat_12  $nucleosome_signal > 2, 'NS>10', 'NS<10')
+#PeriodPlot(object = EAE_AGGR_seurat_12  , group.by = 'nucleosome_group'  )
+
+EAE_AGGR_seurat_12  <- subset ( EAE_AGGR_seurat_12  , subset = peak_region_fragments > 1000 & peak_region_fragments < 20000 & pct_reads_in_peaks > 15 & blacklist_ratio < 0.05 & nucleosome_signal < 10)
+
+
+plot1 <- VlnPlot(
+  object = EAE_AGGR_seurat_12  , features = c('pct_reads_in_peaks', 'blacklist_ratio', 'nucleosome_signal'),
+  pt.size = 0) + NoLegend()
+
+plot2_a <- VlnPlot(
+  object = EAE_AGGR_seurat_12  ,
+ 
+    features = 'peak_region_fragments',
+  pt.size = 0, log = TRUE) + NoLegend()
+
+plot2_b <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'nucleosome_signal', pt.size = 0) + NoLegend()
+plot2_c <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'blacklist_ratio', pt.size = 0) + NoLegend()
+plot2 <- CombinePlots(plots = list(plot2_a,plot2_b,plot2_c), ncol = 3)
+
+CombinePlots(list(plot1,plot2),ncol = 1)
+# /home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X.eps
+
+#setEPS()
+#postscript("/home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X_v2_filtered.eps" ,  width=10, #height=10 )
+#CombinePlots(list(plot1,plot2),ncol = 1)
+#dev.off()
+
+Idents(object = EAE_AGGR_seurat_12  ) <- "condition"
+plot1 <- VlnPlot(
+  object = EAE_AGGR_seurat_12  , features = c('pct_reads_in_peaks', 'blacklist_ratio', 'nucleosome_signal'),
+  pt.size = 0) + NoLegend()
+
+plot2_a <- VlnPlot(
+  object = EAE_AGGR_seurat_12  ,
+ 
+    features = 'peak_region_fragments',
+  pt.size = 0, log = TRUE) + NoLegend()
+
+plot2_b <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'nucleosome_signal', pt.size = 0) + NoLegend()
+plot2_c <- FeatureScatter(EAE_AGGR_seurat_12  ,"peak_region_fragments",'blacklist_ratio', pt.size = 0) + NoLegend()
+plot2 <- CombinePlots(plots = list(plot2_a,plot2_b,plot2_c), ncol = 3)
+
+CombinePlots(list(plot1,plot2),ncol = 1)
+
+
+VlnPlot(
+  object = EAE_AGGR_seurat_12 ,
+  features = c('pct_reads_in_peaks', 'blacklist_ratio', 'nucleosome_signal', 'peak_region_fragments'),
+  pt.size = 0.1,
+  ncol = 4) + NoLegend()
+
+
+#setEPS()
+#postscript("/home/eneritz/SCdata/SCATAC_10X_EAE_230419/FIGURES_200919/QC_EAE_Ctrl_10X_condition_v2_filtered.eps" , width=10, height=10 )
+#CombinePlots(list(plot1,plot2),ncol = 1)
+#dev.off()
+
+
+
+#save( EAE_AGGR_seurat_12 , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks.Robj")
+
+##all the EAEATAC_CR12*png
+
+```
+new TSS
+```{r}
+library(EnsDb.Mmusculus.v79)
+# create granges object with TSS positions
+gene.ranges <- genes(EnsDb.Mmusculus.v79)
+gene.ranges <- gene.ranges[gene.ranges$gene_biotype == 'protein_coding', ]
+
+tss.ranges <- GRanges(
+  seqnames = seqnames(gene.ranges),
+  ranges = IRanges(start = start(gene.ranges), width = 2),
+  strand = strand(gene.ranges)
+)
+
+seqlevelsStyle(tss.ranges) <- 'UCSC'
+tss.ranges <- keepStandardChromosomes(tss.ranges, pruning.mode = 'coarse')
+
+# to save time use the first 2000 TSSs
+EAE_AGGR_seurat_12   <- TSSEnrichment(object = EAE_AGGR_seurat_12  , tss.positions = tss.ranges[1:2000])
+
+EAE_AGGR_seurat_12  $high.tss <- ifelse(EAE_AGGR_seurat_12  $TSS.enrichment > 2, 'High', 'Low')
+TSSPlot(EAE_AGGR_seurat_12  , group.by = 'high.tss') + ggtitle("TSS enrichment score") + NoLegend()
+
+
+EAE_AGGR_seurat_12   <- subset(EAE_AGGR_seurat_12  , subset = peak_region_fragments > 1000 & peak_region_fragments < 20000 & pct_reads_in_peaks > 15 & blacklist_ratio < 0.05 & nucleosome_signal < 10 & TSS.enrichment > 2)
+EAE_AGGR_seurat_12  
+
+
+#save( EAE_AGGR_seurat_12  , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12 _signac_filteredpeaks.Robj")
+
+
+```
+```{r}
+
+EAE_AGGR_seurat_12   <- RunTFIDF(EAE_AGGR_seurat_12  )
+EAE_AGGR_seurat_12   <- FindTopFeatures(EAE_AGGR_seurat_12  , min.cutoff = 'q0')
+EAE_AGGR_seurat_12   <- RunSVD(
+  object = EAE_AGGR_seurat_12  ,
+  assay = 'peaks',
+  reduction.key = 'LSI_',
+  reduction.name = 'lsi'
+)
+
+
+EAE_AGGR_seurat_12   <- RunUMAP(object = EAE_AGGR_seurat_12  , reduction  = 'lsi', dims = 1:30)
+EAE_AGGR_seurat_12   <- RunTSNE(object = EAE_AGGR_seurat_12  , reduction = 'lsi', dims = 1:30)
+EAE_AGGR_seurat_12   <- FindNeighbors(object = EAE_AGGR_seurat_12  , reduction = 'lsi', dims = 1:30)
+EAE_AGGR_seurat_12   <- FindClusters(object = EAE_AGGR_seurat_12  , verbose = FALSE)
+DimPlot(object = EAE_AGGR_seurat_12  , label = TRUE) + NoLegend()
+DimPlot(object = EAE_AGGR_seurat_12 , group.by = "condition" , label = TRUE) + NoLegend()
+DimPlot(object = EAE_AGGR_seurat_12 ,  group.by = "Replicate" , label = TRUE) + NoLegend()
+
+
+save( EAE_AGGR_seurat_12   , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks.Robj")
+
+```
+500bp promoters
+
+```{r}
+library(Signac)
+library(Seurat)
+library(GenomeInfoDb)
+library(EnsDb.Mmusculus.v79)
+
+# extract gene coordinates from Ensembl, and ensure name formatting is consistent with Seurat object 
+gene.coords <- genes(EnsDb.Mmusculus.v79, filter = ~ gene_biotype == "protein_coding")
+seqlevelsStyle(gene.coords) <- 'UCSC'
+genebody.coords <- keepStandardChromosomes(gene.coords, pruning.mode = 'coarse')
+genebodyandpromoter.coords <- Extend(x = gene.coords, upstream = 500, downstream = 0  )
+
+
+###use this in SNAP
+promoter500.coords <- genebodyandpromoter.coords 
+#save( promoter500.coords , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/promoter500_Ranges_MM10.Robj")
+
+
+
+# create a gene by cell matrix
+gene.activities <- FeatureMatrix(
+  fragments = fragment.path,
+  features = genebodyandpromoter.coords,
+  cells = colnames(EAE_AGGR_seurat_12),
+  chunk = 10
+)
+
+# convert rownames from chromsomal coordinates into gene names
+gene.key <- genebodyandpromoter.coords$gene_name
+names(gene.key) <- GRangesToString(grange = genebodyandpromoter.coords)
+rownames(gene.activities) <- gene.key[rownames(gene.activities)]
+rownames(gene.activities) <- make.names( rownames(gene.activities), unique=TRUE)
+# add the gene activity matrix to the Seurat object as a new assay, and normalize it
+EAE_AGGR_seurat_12[['RNA']] <- CreateAssayObject(counts = gene.activities)
+EAE_AGGR_seurat_12 <- NormalizeData(
+  object = EAE_AGGR_seurat_12,
+  assay = 'RNA',
+  normalization.method = 'LogNormalize',
+  scale.factor = median(EAE_AGGR_seurat_12$nCount_RNA)
+)
+
+
+#setEPS()
+#postscript("/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_Ctrl_10X_clustering_UMAP_markers.eps" ,  width=15, height=15 )
+#our gene markers
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+FeaturePlot(
+  object = EAE_AGGR_seurat_12 ,
+  features = c("Ptprz1" , "Mog" , "Pdgfra" , "Sox6" , "Klk6" , "Opalin" , "Plp1" , "Sox10" , "H2.Ab1" , "Serpina3n" ,   "Cd74" , "H2.Aa"  ),
+  pt.size = 0.1,
+  max.cutoff = 'q95', ncol = 3 , cols =  c("lightgrey",   "dodgerblue4" ))
+#dev.off()
+
+#promoters
+#EAEATAC_CR12_OLmarkers.png
+#from here copied to uppmax for the enhancers
+#save( EAE_AGGR_seurat_12 , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks.Robj")
+
+
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+FeaturePlot(
+  object = EAE_AGGR_seurat_12 ,
+  features = c("Ptprz1" ,  "Pdgfra" , "Sox6" , "Klk6" , "Opalin" , "Plp1" , "Mog" , "Sox10" ) , # , "H2.Ab1" , "Serpina3n" ,   "Cd74" , "H2.Aa"  ),
+  pt.size = 0.1,
+  max.cutoff = 'q95', ncol = 3 , cols =  c("lightgrey",   "dodgerblue4" ))
+
+
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+FeaturePlot(
+  object = EAE_AGGR_seurat_12 ,
+  features = c("Psmb8" , "Tap2" ) , # , "H2.Ab1" , "Serpina3n" ,   "Cd74" , "H2.Aa"  ),
+  pt.size = 0.1,
+  max.cutoff = 'q95', ncol = 2 , cols =  c("lightgrey",   "dodgerblue4" ))
+
+
+
+```
+```{r}
+
+load("/proj/tmp/tmp_EA/expr_EAE_SS2_raw.Robj")
+
+meta.data <- read.table(file = "/proj/tmp/tmp_EA/EAE_metadata_complete",
+                      row.names = 1, stringsAsFactors = FALSE , header=T )
+
+
+cols.to.keep<-which(colnames(expr_EAE_SS2) %in% rownames(meta.data)) 
+expr_EAE_SS2 <- (expr_EAE_SS2[,cols.to.keep])
+
+meta.data <- (meta.data[4:5])
+colnames(meta.data) <- c( "tech" , "CelltypeRNA")
+ 
+
+EAERNA <- CreateSeuratObject(counts = expr_EAE_SS2 , project = 'EAERNA', meta.data = meta.data, min.cells = 2)
+low.q.cells <- rownames(x = meta.data[meta.data$class %in% c('Low Quality', 'No Class'), ])
+ok.cells <- rownames(x = meta.data)[!(rownames(x = meta.data) %in% low.q.cells)]
+EAERNA <- EAERNA[, ok.cells]
+EAERNA <- NormalizeData(object = EAERNA)
+EAERNA <- FindVariableFeatures(object = EAERNA, nfeatures = 2000)
+EAERNA <- ScaleData(object = EAERNA)
+EAERNA <- RunPCA(object = EAERNA, npcs = 20, verbose = FALSE)
+EAERNA <- RunUMAP(object = EAERNA, dims = 1:20, nneighbors = 5)
+
+
+library(magrittr) # needs to be run every time you start R and want to use %>%
+library(dplyr)    # alternatively, this also loads %>%
+library(tibble)
+library(tidyverse)
+
+#saveRDS(object = EAERNA, file = "/proj/tmp/tmp_EA/EAE_SS2_seurat_allannot_230120.rds")
+Idents(object = EAERNA ) <- "CelltypeRNA"
+EAERNA.markers <- FindAllMarkers(EAERNA , only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25  )
+EAERNA.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
+
+EAERNA.markers_MOL2 <-  FindMarkers(EAERNA , ident.1 = "MOL2_Cntrl_A"  ,  ident.2 = "MOL1_2_EAE" , min.pct = 0.25, logfc.threshold = 0.25 )
+
+EAERNA.markers_MOL56 <-  FindMarkers(EAERNA , ident.1 = c("MOL5_6_Cntrl_A" , "MOL5_6_Cntrl_B" )  ,  ident.2 = c("MOL5_6_EAE_B" , "MOL5_6_EAE_C") , min.pct = 0.25, logfc.threshold = 0.25 )
+
+EAERNA.markers_OPC <-  FindMarkers(EAERNA , ident.1 = c("OPC1"  )  ,  ident.2 = c("OPC2" , "OPC3") , min.pct = 0.25, logfc.threshold = 0.25 )
+
+write.table( EAERNA.markers_MOL2 ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/RNA_NatMed18/EAERNA.markers_MOL2_CtrvsEAE.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+write.table( EAERNA.markers_MOL56 ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/RNA_NatMed18/EAERNA.markers_MOL56_CtrvsEAE.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+write.table( EAERNA.markers_OPC ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/RNA_NatMed18/EAERNA.markers_OPC_CtrvsEAE.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+##DE bet subclasses MOL56
+
+EAERNA.markers_MOL56_EAE <-  FindMarkers(EAERNA , ident.1 = "MOL5_6_EAE_B"   ,  ident.2 = "MOL5_6_EAE_C", min.pct = 0.25, logfc.threshold = 0.25 )
+
+EAERNA.markers_MOL56_Ctr <-  FindMarkers(EAERNA , ident.1 = c("MOL5_6_Cntrl_A"  )  ,  ident.2 = c("MOL5_6_Cntrl_B" ) , min.pct = 0.25, logfc.threshold = 0.25 )
+
+
+write.table( EAERNA.markers_MOL56_EAE ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/RNA_NatMed18/EAERNA.markers_MOL56_subclasses_EAE.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+
+write.table( EAERNA.markers_MOL56_Ctr ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/RNA_NatMed18/EAERNA.markers_MOL56_subclasses_Ctr.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+# here: /home/eneritz/SCdata/SCATAC_10X_EAE_230419/Manuscript_2020/Figures_ExpressionNatMed18
+
+```
+label transfer
+RNA reference for the promoters
+
+```{r}
+
+load("/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks.Robj")
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+
+#ibrary(Seurat);
+ 
+# cut -f 1,2,3,8 /home/eneritz/Tools/DATABASE/MM10/ENSG83.MM10.bed | sort -k1,1 -k2,2n  > /home/eneritz/Tools/DATABASE/MM10/ENSG83.MM10.sorted.bed
+  ##DO NOT RUN THIS  
+   
+
+
+
+
+transfer.anchors <- FindTransferAnchors(
+  reference = EAERNA ,
+  query = EAE_AGGR_seurat_12 ,
+  reduction = 'cca',
+  dims = 1:30
+)
+
+predicted.labels <- TransferData(
+  anchorset = transfer.anchors,
+  refdata = EAERNA$CelltypeRNA ,
+  weight.reduction = EAE_AGGR_seurat_12[['lsi']],
+  dims = 1:30
+)
+
+EAE_AGGR_seurat_12 <- AddMetaData(object = EAE_AGGR_seurat_12 , metadata = predicted.labels)
+
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+
+
+library(ggplot2)
+plot1 <- DimPlot(EAERNA, group.by = 'CelltypeRNA', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scRNA-seq')
+plot2 <- DimPlot(EAE_AGGR_seurat_12, group.by = 'predicted.id', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scATAC-seq')
+plot3 <- DimPlot(EAE_AGGR_seurat_12, group.by = 'condition', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scATAC-seq')
+#plot3 <- DimPlot(EAE_AGGR_seurat_12, group.by = 'Celltype_RNA', label = TRUE, repel = TRUE) + NoLegend() + ggtitle('scATAC-seq')
+CombinePlots(list(plot1,plot2, plot3), ncol = 2)
+
+plot2
+
+
+#save( EAE_AGGR_seurat_12 , file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks_EAEAllAnnot.Robj")
+
+#write.table( EAE_AGGR_seurat_12@meta.data ,file = "/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/metadata_EAE10X_predictedAllAnnot_041219.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+
+#cut -f 1,30  /data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/metadata_EAE10X_predictedAllAnnot_041219.txt > /data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/metadata_EAE10X_predicted_AllAnnot.seurat
+
+
+###plot some genes in violinplot from the scRNA
+
+##the expression matrix
+```
+scRNA-seq violin plots of the genes in figure1
+```{r}
+
+RNA_ExpMat <- GetAssayData(object = EAERNA)
+
+
+require(scales)
+
+# Create vector with levels of object@ident
+identities <- levels(EAERNA$CelltypeRNA)
+
+identities <- levels(Idents(object = EAERNA))
+
+my_color_palette <- hue_pal()(length(identities))
+
+Idents(object = EAERNA ) <- "CelltypeRNA"
+
+library(ggplot2)
+#Order to whateverordering you want, by writing existing levels in a different order
+#example
+expression_mat <- GetAssayData(object = EAERNA)
+annot_mat <- Idents(object = EAERNA) # now is in celltypeL3 , so do first the change ident
+cols1 <- ( "Renamed_clusternames" ) 
+networkAnnotableFile <- as.data.frame(annot_mat)
+colnames(networkAnnotableFile) <- cols1 #Renamed_clusternames
+networkExpressionFile <- as.matrix(expression_mat)
+networkAnnotableFile$ReorderedViolin <- factor(networkAnnotableFile$Renamed_clusternames, levels= c(
+ 
+ "PLC" ,   "VLMC1",      "VLMC3"    ,   "VLMC4" ,   "OPC1" ,  "OPC2" ,   "OPC3" , "OPC_Cycling" ,  "COP" ,     "NFOL"   ,                  "MOL5_6_Cntrl_A" , "MOL5_6_Cntrl_B" , "MOL5_6_EAE_A" ,  "MOL5_6_EAE_B" ,    "MOL5_6_EAE_C" ,    "MOL2_Cntrl_A" , "MOL1_2_EAE" ,    "MOL3_EAE" ,       "MiGl1" ,  "MiGl2" , "MiGl3" , "MiGl4" , "MiGl5" ))
+
+
+df <- networkAnnotableFile[order(networkAnnotableFile$ReorderedViolin),]
+df$order <- factor(row.names(df), levels = row.names(df))
+
+
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+expression <- as.data.frame(t(networkExpressionFile[,row.names(df)]))
+#make expression dataframe for plot
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+
+
+genelist <-  c( "Scnn1a" ,
+"Tnfrsf1a",
+"Plekhg6",
+"Ciita",
+"Psmb9" ,
+"Tap1",
+"Psmb8" ,
+"Tap2",
+"H2-Ab1" ,
+"H2-Aa")
+
+
+genelist <-  c( "Klk8" ,
+"Klk6",
+"Trim34a",
+"Tlr3",
+"Plin4" ,
+"Hif3a")
+
+
+library(reshape2)
+expression <- expression[,genelist]
+
+
+
+
+expression <-cbind(expression,Clusters=FinalClustersreordered)
+expression_genelist <- melt(expression,id=c("Clusters") )
+ #colnames(expression_genelist)[3] <- "Normalized_Counts"
+ colnames(expression_genelist)[3] <- "Normalized_expression"
+
+#plot
+p <- ggplot(expression_genelist, aes(x=Clusters, y=Normalized_expression,fill=Clusters))
+
+p +geom_violin(scale="width") +geom_boxplot(width=0.1,outlier.shape = NA,position=position_dodge(1),fill="white")+ #theme_bw()+scale_fill_manual(values=c(   "#F8766D" , "#FB61D7", "#53B400" , "#00B6EB" , "#A58AFF"))+
+  
+#theme_bw()+scale_fill_manual(values=c(  "gray48","#EB4647","darkseagreen1","#AF91C5","limegreen" ))+ #,"deepskyblue","palegreen4")  
+theme_bw()+scale_fill_manual(values=c(  
+ # 
+  # "PLC" =  "#E4C572"  , "VLMC1" =  "#aaffc3" , "VLMC3" =  "cyan" , "OPC1" = "#f032e6" ,  "OPC3" = "#fabebe"  ,  "OPC2" = "#000075" ,  "OPC_Cycling" = "#808080",  "COP" =  "#800000" ,  "NFOL" = "#911eb4" , "MOL5_6_Cntrl_A" = "#46f0f0" ,   "MOL5_6_Cntrl_B" = "tomato"  ,  "MOL5_6_EAE_A" = "#4663d8" ,     "MOL5_6_EAE_B" = "olivedrab3"  , "MOL5_6_EAE_C" = "grey" , "MOL2_Cntrl_A" = "#bcf60c" , "MOL1_2_EAE" = "#ffe119" ,   "MOL3_EAE" = "#3cb44b" ,   "MiGl1" =  "#9a6324"  , "MiGl2" = "#808000" , "MiGl3" ="#008080" ,   "MiGl4" = "#000075" )
+  
+    "#E4C572"  ,  "#aaffc3" ,  "cyan" , "#aaffc3",  "#f032e6" ,  "#fabebe"  ,   "#000075" ,  "#808080",   "#800000" ,   "#911eb4" ,  "#46f0f0" ,    "tomato"  ,   "#4663d8" ,     "olivedrab3"  ,  "grey" ,  "#bcf60c" ,  "#ffe119" ,    "#3cb44b" ,     "#9a6324"  , "#808000" , "#008080" ,    "#000075"  ,    "#000075" )) + 
+  
+  #,"#5fc350","#d078e1","#bab535","#626ddc","#c84299"))+
+theme(axis.line = element_line(colour = "black"),
+       panel.grid.major = element_blank(),
+       panel.grid.minor = element_blank(),
+       panel.background = element_blank()) + theme(axis.text.x = element_text(angle = 90))+facet_grid(variable ~ .,scales="free")
+
+# scRNA_genes1_violin_allgroups_020720.eps
+#scRNA_genes2_violin_allgroups_020720.eps
+EAERNA_OLG <- subset(x = EAERNA , idents = c( "PLC" ,   "VLMC1",      "VLMC3"    ,   "VLMC4" ,   "OPC_Cycling" ,  "COP" ,     "NFOL"   ,                   "MiGl1" ,  "MiGl2" , "MiGl3" , "MiGl4" , "MiGl5" ), invert = TRUE)
+
+
+expression_mat <- GetAssayData(object = EAERNA_OLG)
+annot_mat <- Idents(object = EAERNA_OLG) # now is in celltypeL3 , so do first the change ident
+cols1 <- ( "Renamed_clusternames" ) 
+networkAnnotableFile <- as.data.frame(annot_mat)
+colnames(networkAnnotableFile) <- cols1 #Renamed_clusternames
+networkExpressionFile <- as.matrix(expression_mat)
+networkAnnotableFile$ReorderedViolin <- factor(networkAnnotableFile$Renamed_clusternames, levels= c(
+ 
+   "OPC1" ,  "OPC2" ,   "OPC3" ,                  "MOL5_6_Cntrl_A" , "MOL5_6_Cntrl_B" , "MOL5_6_EAE_A" ,  "MOL5_6_EAE_B" ,    "MOL5_6_EAE_C" ,    "MOL2_Cntrl_A" , "MOL1_2_EAE" ,    "MOL3_EAE"  ))
+
+
+df <- networkAnnotableFile[order(networkAnnotableFile$ReorderedViolin),]
+df$order <- factor(row.names(df), levels = row.names(df))
+
+
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+expression <- as.data.frame(t(networkExpressionFile[,row.names(df)]))
+#make expression dataframe for plot
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+
+
+genelist <-  c( "Scnn1a" ,
+"Tnfrsf1a",
+"Plekhg6",
+"Ciita",
+"Psmb9" ,
+"Tap1",
+"Psmb8" ,
+"Tap2",
+"H2-Ab1" ,
+"H2-Aa")
+
+
+genelist <-  c( "Klk8" ,
+"Klk6",
+"Trim34a",
+"Tlr3",
+"Plin4" ,
+"Hif3a")
+
+
+library(reshape2)
+expression <- expression[,genelist]
+
+
+
+
+expression <-cbind(expression,Clusters=FinalClustersreordered)
+expression_genelist <- melt(expression,id=c("Clusters") )
+ #colnames(expression_genelist)[3] <- "Normalized_Counts"
+ colnames(expression_genelist)[3] <- "Normalized_expression"
+
+#plot
+p <- ggplot(expression_genelist, aes(x=Clusters, y=Normalized_expression,fill=Clusters))
+
+p +geom_violin(scale="width") +geom_boxplot(width=0.1,outlier.shape = NA,position=position_dodge(1),fill="white")+ #theme_bw()+scale_fill_manual(values=c(   "#F8766D" , "#FB61D7", "#53B400" , "#00B6EB" , "#A58AFF"))+
+  
+#theme_bw()+scale_fill_manual(values=c(  "gray48","#EB4647","darkseagreen1","#AF91C5","limegreen" ))+ #,"deepskyblue","palegreen4")  
+theme_bw()+scale_fill_manual(values=c(  
+ # 
+  # "PLC" =  "#E4C572"  , "VLMC1" =  "#aaffc3" , "VLMC3" =  "cyan" , "OPC1" = "#f032e6" ,  "OPC3" = "#fabebe"  ,  "OPC2" = "#000075" ,  "OPC_Cycling" = "#808080",  "COP" =  "#800000" ,  "NFOL" = "#911eb4" , "MOL5_6_Cntrl_A" = "#46f0f0" ,   "MOL5_6_Cntrl_B" = "tomato"  ,  "MOL5_6_EAE_A" = "#4663d8" ,     "MOL5_6_EAE_B" = "olivedrab3"  , "MOL5_6_EAE_C" = "grey" , "MOL2_Cntrl_A" = "#bcf60c" , "MOL1_2_EAE" = "#ffe119" ,   "MOL3_EAE" = "#3cb44b" ,   "MiGl1" =  "#9a6324"  , "MiGl2" = "#808000" , "MiGl3" ="#008080" ,   "MiGl4" = "#000075" )
+  
+     "#f032e6" ,  "#fabebe"  ,   "#000075" ,    "#46f0f0" ,    "tomato"  ,   "#4663d8" ,     "olivedrab3"  ,  "grey" ,  "#bcf60c" ,  "#ffe119" ,    "#3cb44b" )) + 
+  
+  #,"#5fc350","#d078e1","#bab535","#626ddc","#c84299"))+
+theme(axis.line = element_line(colour = "black"),
+       panel.grid.major = element_blank(),
+       panel.grid.minor = element_blank(),
+       panel.background = element_blank()) + theme(axis.text.x = element_text(angle = 90))+facet_grid(variable ~ .,scales="free")
+
+# scRNA_genes1_violin_OLGgroups_020720.eps
+# scRNA_genes2_violin_OLGgroups_020720.eps
+##############################################################
+
+EAERNA_OLG <- subset(x = EAERNA , idents = c( "PLC" ,   "VLMC1",      "VLMC3"    ,   "VLMC4" ,   "OPC_Cycling" ,  "COP" ,     "NFOL"   ,                   "MiGl1" ,  "MiGl2" , "MiGl3" , "MiGl4" , "MiGl5" ), invert = TRUE)
+
+
+old = c(        "OPC1"    ,       "MOL5_6_Cntrl_A" ,"MOL5_6_Cntrl_B", "OPC2"  ,           "MOL5_6_EAE_B" ,             "MOL2_Cntrl_A",   "MOL3_EAE" ,        "MOL5_6_EAE_A"  ,  "OPC3"        ,   "MOL5_6_EAE_C"  ,   "MOL1_2_EAE"     )
+
+new = c(       "OPC_Ctr"    ,       "MOL56_Ctr" ,"MOL56_Ctr", "OPC_EAE"  ,            "MOL56_EAE" ,       "MOL2_Ctr",   "MOL3_EAE" ,          "MOL56_EAE"  ,  "OPC_EAE"        ,   "MOL56_EAE"  ,   "MOL12_EAE"    )
+
+Idents(object = EAERNA_OLG ) <- "CelltypeRNA"
+
+
+
+EAERNA_OLG@active.ident <- plyr::mapvalues(x = EAERNA_OLG@active.ident , from = old , to = new)
+DimPlot(EAERNA, label = TRUE,  repel = T , pt.size = 0.5 , cols = c( "COP" =  "#800000" ,  "MiGl1" =  "#9a6324"  , "MiGl2" = "#808000" , "MiGl3" ="#008080" ,   "MiGl4" = "#000075" , "MiGl5" = "#000075" , "MOL12_EAE" = "#ffe119" , "MOL2_Ctr" = "#bcf60c" , "MOL3_EAE" = "#3cb44b" , "MOL56_Ctr" = "#46f0f0" , "MOL56_EAE" = "#4663d8" ,  "NFOL" = "#911eb4" , "OPC_Ctr" = "#f032e6" ,  "OPC_Cycling" = "#808080",  "OPC_EAE" = "#fabebe"  , "PLC" =  "#E4C572"  , "VLMC" =  "#aaffc3" )  )  + NoLegend() + ggtitle('scRNA-seq Celltypes')
+
+
+library(ggplot2)
+#Order to whateverordering you want, by writing existing levels in a different order
+#example
+expression_mat <- GetAssayData(object = EAERNA_OLG)
+annot_mat <- Idents(object = EAERNA_OLG) # now is in celltypeL3 , so do first the change ident
+cols1 <- ( "Renamed_clusternames" ) 
+networkAnnotableFile <- as.data.frame(annot_mat)
+colnames(networkAnnotableFile) <- cols1 #Renamed_clusternames
+networkExpressionFile <- as.matrix(expression_mat)
+networkAnnotableFile$ReorderedViolin <- factor(networkAnnotableFile$Renamed_clusternames, levels= c(
+ 
+      "OPC_Ctr" ,  "OPC_EAE" ,                  "MOL56_Ctr" , "MOL56_EAE" ,  "MOL2_Ctr" , "MOL12_EAE" ,    "MOL3_EAE"      ))
+
+
+df <- networkAnnotableFile[order(networkAnnotableFile$ReorderedViolin),]
+df$order <- factor(row.names(df), levels = row.names(df))
+
+
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+expression <- as.data.frame(t(networkExpressionFile[,row.names(df)]))
+#make expression dataframe for plot
+annoviolin <- networkAnnotableFile[row.names(df),]
+FinalClustersreordered <-  networkAnnotableFile[row.names(df),]$ReorderedViolin
+
+
+genelist <-  c( "Scnn1a" ,
+"Tnfrsf1a",
+"Plekhg6",
+"Ciita",
+"Psmb9" ,
+"Tap1",
+"Psmb8" ,
+"Tap2",
+"H2-Ab1" ,
+"H2-Aa")
+
+genelist <-  c( "Klk8" ,
+"Klk6",
+"Trim34a",
+"Tlr3",
+"Plin4" ,
+"Hif3a")
+
+
+
+library(reshape2)
+expression <- expression[,genelist]
+
+
+
+
+expression <-cbind(expression,Clusters=FinalClustersreordered)
+expression_genelist <- melt(expression,id=c("Clusters") )
+ #colnames(expression_genelist)[3] <- "Normalized_Counts"
+ colnames(expression_genelist)[3] <- "Normalized_expression"
+
+#plot
+p <- ggplot(expression_genelist, aes(x=Clusters, y=Normalized_expression,fill=Clusters))
+
+p +geom_violin(scale="width") +geom_boxplot(width=0.1,outlier.shape = NA,position=position_dodge(1),fill="white")+ #theme_bw()+scale_fill_manual(values=c(   "#F8766D" , "#FB61D7", "#53B400" , "#00B6EB" , "#A58AFF"))+
+  
+#theme_bw()+scale_fill_manual(values=c(  "gray48","#EB4647","darkseagreen1","#AF91C5","limegreen" ))+ #,"deepskyblue","palegreen4")  
+theme_bw()+scale_fill_manual(values=c(  
+ # 
+  # "PLC" =  "#E4C572"  , "VLMC1" =  "#aaffc3" , "VLMC3" =  "cyan" , "OPC1" = "#f032e6" ,  "OPC3" = "#fabebe"  ,  "OPC2" = "#000075" ,  "OPC_Cycling" = "#808080",  "COP" =  "#800000" ,  "NFOL" = "#911eb4" , "MOL5_6_Cntrl_A" = "#46f0f0" ,   "MOL5_6_Cntrl_B" = "tomato"  ,  "MOL5_6_EAE_A" = "#4663d8" ,     "MOL5_6_EAE_B" = "olivedrab3"  , "MOL5_6_EAE_C" = "grey" , "MOL2_Cntrl_A" = "#bcf60c" , "MOL1_2_EAE" = "#ffe119" ,   "MOL3_EAE" = "#3cb44b" ,   "MiGl1" =  "#9a6324"  , "MiGl2" = "#808000" , "MiGl3" ="#008080" ,   "MiGl4" = "#000075" )
+      "#f032e6" ,  "#fabebe"   ,  "#46f0f0" ,     "#4663d8" ,      "#bcf60c" ,  "#ffe119" ,    "#3cb44b"  )) + 
+  
+  #,"#5fc350","#d078e1","#bab535","#626ddc","#c84299"))+
+theme(axis.line = element_line(colour = "black"),
+       panel.grid.major = element_blank(),
+       panel.grid.minor = element_blank(),
+       panel.background = element_blank()) + theme(axis.text.x = element_text(angle = 90))+facet_grid(variable ~ .,scales="free")
+
+# scRNA_genes1_violin_OLGgroupsGrouped_020720.eps
+
+#scRNA_genes1_violin_OLGgroupsGrouped_020720.eps
+
+
+
+
+```
+plot the prediction scores --- still editing
+```{r}
+load("/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks_EAEAllAnnot.Robj")
+
+DefaultAssay(EAE_AGGR_seurat_12) <- 'RNA'
+###edit the control names:
+Idents(object = EAE_AGGR_seurat_12 ) <- "Celltypes_Annot"
+#OL_Clusters
+
+#use the curated annotations
+load("/data/proj/GCB_EA/SCATACSEQ_EAE_10X_230419/EAE_AGGR_seurat_12_signac_filteredpeaks.Robj")
+unique(EAE_AGGR_seurat_12$OL_Clusters)
+# [1] "MiGl2"           "MOL56_Ctr"       "MOL56_EAE"       "OPC_Ctr"         "MiGl1"           "MOL12_EAE"       "OPC_EAE"        
+# [8] "MOL3_EAE"        "MiGl3"           "MOL2_Ctr"        "COP_EAE"         "MOL_EAE"         "NFOL_EAE"        "19"             
+#[15] "MOL_Ctr"         "MiGl34"          "MiGl4"           "OPC_Cycling_EAE"
+
+
+
+Idents(object = EAE_AGGR_seurat_12 ) <- "OL_Clusters"
+VlnPlot(EAE_AGGR_seurat_12, features = str_subset(colnames(EAE_AGGR_seurat_12@meta.data), fixed("prediction.")), pt.size = 0.1)
+
+object_copy <- EAE_AGGR_seurat_12
+my_levels <- c(    "VLMC1" ,  "VLMC3"    ,"PLC"   , "MiGl1", "MiGl2"  , "MiGl3" ,  "MiGl34" ,   "MiGl4" ,  "NFOL_EAE",    "COP_EAE" ,"OPC_Cycling_EAE"   ,"OPC_Ctr"    , "OPC_EAE"     , "MOL56_Ctr" ,      "MOL56_EAE" ,            "MOL2_Ctr"   ,          "MOL12_EAE"  ,    "MOL3_EAE" ,                          "MOL_EAE"      ,   "MOL_Ctr"                         )
+Idents(object_copy) <- factor(Idents(object_copy), levels= my_levels)
+
+VlnPlot(object_copy, features = str_subset(colnames(object_copy@meta.data), fixed("prediction.score.MOL56")), pt.size = 0 , ncol = 2 )
+
+Prediction_score_MOL56_030720
+
+
+VlnPlot(object_copy, features = str_subset(colnames(object_copy@meta.data), fixed("prediction.score.MOL2_Ctr")), pt.size = 0 , ncol = 2 )
+Prediction_score_MOL2_Ctr_030720
+
+VlnPlot(object_copy, features = str_subset(colnames(object_copy@meta.data), fixed("prediction.score.MOL2_EAE")), pt.size = 0 , ncol = 2 )
+Prediction_score_MOL12_EAE_030720
+
+
+VlnPlot(object_copy, features = str_subset(colnames(object_copy@meta.data), fixed("prediction.score.OPC_EAE")), pt.size = 0 , ncol = 2 )
+Prediction_score_OPC_EAE_030720
+
+
+```
