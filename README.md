@@ -5,7 +5,7 @@ Code and data from Meijer and Agirre et al. "A primed immune transcriptional pro
 
 https://tinyurl.com/yaxh4tv5
 
-## IFNg RNA-seq and ATAC-seq signal and promoter-enhancer interactions
+## mm10 IFNg CUT&RUN, RNA-seq, ATAC-seq signal and promoter-enhancer interactions in oligodendrocytes
 
 https://tinyurl.com/y6uzkmq6
 
