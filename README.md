@@ -9,7 +9,7 @@ https://tinyurl.com/yaxh4tv5
 
 ## mm10 IFNg CUT&RUN, RNA-seq, ATAC-seq signal and promoter-enhancer interactions in oligodendrocytes
 
-https://tinyurl.com/y6uzkmq6
+https://tinyurl.com/y3txg5kf
 
 ## scATAC-seq clustering and dimension reduction UMAP
 
