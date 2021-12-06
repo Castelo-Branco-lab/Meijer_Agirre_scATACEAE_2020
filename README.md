@@ -17,6 +17,13 @@ https://castelobranco.shinyapps.io/SCATAC10X_2020/
 
 ## Raw and processed data availability
 
-GEO accession series GSE154175
+GEO accession super series GSE166179
+Includes:
+- 10X scATAC-seq 
+- Bulk CutandRun 
+- Bulk RNA-seq 
+- HiChIP
+- 10X single cell multiomics (ATAC+RNA)
+- Plate based single cell ATAC-seq
 
-https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE154175
+https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE166179
