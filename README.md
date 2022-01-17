@@ -1,5 +1,6 @@
 # Meijer_Agirre_scATACEAE_2021
-Code and data from Meijer and Agirre et al. "A primed immune transcriptional program is activated in oligodendroglia in multiple sclerosis."
+Code and data from Meijer and Agirre et al. 2022 "Epigenomic priming of immune genes implicates oligodendroglia in multiple sclerosis susceptibility."
+
 https://doi.org/10.1101/2020.07.21.213876 
 
 
