@@ -16,13 +16,26 @@ pseudo bulk scATAC-seq signal for each celltype. MS associated SNPs coordenates.
 
 https://tinyurl.com/yj7nh2y5
 
-## scATAC-seq clustering and dimension reduction UMAP
+## scATAC-seq and multiome clustering and dimension reduction UMAPs
 
+# scATAC-seq Sox10-GFP+/DAPI- 
 https://castelobranco.shinyapps.io/SCATAC10X_2020/
+
+# sc multiome (RNA+ATAC) EAE_disease_peak and Ctrl Sox10-GFP+/DAPI-
+https://castelobranco.shinyapps.io/eae_multi_act/  Gene activities fron scATAC-seq
+https://castelobranco.shinyapps.io/eae_multi_rna/  Gene expression from scRNA-seq 
+
+# sc multiome (RNA+ATAC) from 2 Gray matter control post-morten samples
+https://castelobranco.shinyapps.io/hs_ctr_multi_act Gene activities fron scATAC-seq
+https://castelobranco.shinyapps.io/hs_ctr_multi_rna Gene expression from scRNA-seq 
+
+## Link to the datasets through UCSC CELL browser (thanks to Mathew L. Speir , genome.UCSC.edu)
+
+http://cells.ucsc.edu/?ds=olg-eae-ms
 
 ## Raw and processed data availability
 
-GEO accession super series GSE166179
+# GEO accession super series GSE166179
 Includes:
 - 10X scATAC-seq 
 - Bulk CutandRun 
@@ -32,3 +45,7 @@ Includes:
 - Plate based single cell ATAC-seq
 
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE166179
+
+# Human raw FastQ and CellRanger arc v.2.0.0 BAM files can be access through https://ega-archive.org/ :
+
+EGAS00001005911 
