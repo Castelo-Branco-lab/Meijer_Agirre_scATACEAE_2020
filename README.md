@@ -18,24 +18,23 @@ https://tinyurl.com/yj7nh2y5
 
 ## scATAC-seq and multiome clustering and dimension reduction UMAPs
 
-# scATAC-seq Sox10-GFP+/DAPI- 
+scATAC-seq Sox10-GFP+/DAPI- 
 https://castelobranco.shinyapps.io/SCATAC10X_2020/
 
-# sc multiome (RNA+ATAC) EAE_disease_peak and Ctrl Sox10-GFP+/DAPI-
+sc multiome (RNA+ATAC) EAE_disease_peak and Ctrl Sox10-GFP+/DAPI-
 https://castelobranco.shinyapps.io/eae_multi_act/  Gene activities fron scATAC-seq
 https://castelobranco.shinyapps.io/eae_multi_rna/  Gene expression from scRNA-seq 
 
-# sc multiome (RNA+ATAC) from 2 Gray matter control post-morten samples
+sc multiome (RNA+ATAC) from 2 Gray matter control post-morten samples
 https://castelobranco.shinyapps.io/hs_ctr_multi_act Gene activities fron scATAC-seq
-https://castelobranco.shinyapps.io/hs_ctr_multi_rna Gene expression from scRNA-seq 
+https://castelobranco.shinyapps.io/hs_ctr_multi_rna Gene expression from scRNA-seq
 
-## Link to the datasets through UCSC CELL browser (thanks to Mathew L. Speir , genome.UCSC.edu)
-
+Link to the datasets through UCSC CELL browser (thanks to Mathew L. Speir , genome.UCSC.edu)
 http://cells.ucsc.edu/?ds=olg-eae-ms
 
 ## Raw and processed data availability
 
-# GEO accession super series GSE166179
+GEO accession super series GSE166179
 Includes:
 - 10X scATAC-seq 
 - Bulk CutandRun 
@@ -46,6 +45,6 @@ Includes:
 
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE166179
 
-# Human raw FastQ and CellRanger arc v.2.0.0 BAM files can be access through https://ega-archive.org/ :
+Human raw FastQ and CellRanger arc v.2.0.0 BAM files can be access through https://ega-archive.org/ :
 
 EGAS00001005911 
