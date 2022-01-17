@@ -1,0 +1,379 @@
+---
+title: "g2p"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+```{r}
+
+library(Seurat)
+library(Signac)
+library(ArchR)
+library(EnsDb.Mmusculus.v79)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(tidyverse)
+library(GenomeInfoDb)
+set.seed(1234)
+
+
+```
+
+```{r }
+
+#fragments from EAE
+#/Cellranger_ATAC/cellranger-atac-1.2.0/AGGR_MM_10XATAC_CR12_V2/outs/fragments.tsv.gz  
+
+
+library(ArchR)
+addArchRGenome("Mm10")
+addArchRThreads(threads = 16) 
+
+#be carefull using the correct ones
+inputFiles <- ("atac_fragments.tsv.gz")
+
+inputFiles
+
+
+ArrowFiles <- createArrowFiles(
+  inputFiles = inputFiles,
+  sampleNames = "EAE_Ctr_",
+  filterTSS = 4, #Dont set this too high because you can always increase later
+  filterFrags = 1000, 
+  addTileMat = TRUE,
+  addGeneScoreMat = TRUE
+)
+
+
+doubScores <- addDoubletScores(
+    input = ArrowFiles,
+    k = 10, #Refers to how many cells near a "pseudo-doublet" to count.
+    knnMethod = "UMAP", #Refers to the embedding to use for nearest neighbor search with doublet projection.
+    LSIMethod = 1
+)
+
+
+projEAE <- ArchRProject(
+  ArrowFiles = ArrowFiles, 
+  outputDirectory = "EAE_multiomics/ArchR",
+  copyArrows = TRUE #This is recommened so that if you modify the Arrow files you have an original copy for later usage.
+)
+
+
+
+```
+
+
+```{r }
+head(projEAE$Sample)
+
+quantile(projEAE$TSSEnrichment)
+
+df <- getCellColData(projEAE, select = c("log10(nFrags)", "TSSEnrichment"))
+df
+
+
+p <- ggPoint(
+    x = df[,1], 
+    y = df[,2], 
+    colorDensity = TRUE,
+    continuousSet = "sambaNight",
+    xlabel = "Log10 Unique Fragments",
+    ylabel = "TSS Enrichment",
+    xlim = c(log10(500), quantile(df[,1], probs = 0.99)),
+    ylim = c(0, quantile(df[,2], probs = 0.99))
+) + geom_hline(yintercept = 4, lty = "dashed") + geom_vline(xintercept = 3, lty = "dashed")
+
+p
+```
+```{r }
+projEAE <- addIterativeLSI(
+    ArchRProj = projEAE,
+    useMatrix = "TileMatrix", 
+    name = "IterativeLSI", 
+    iterations = 2, 
+    clusterParams = list( #See Seurat::FindClusters
+        resolution = c(0.2), 
+       # sampleCells = 10000, 
+        n.start = 10
+    ), 
+    varFeatures = 25000, 
+    dimsToUse = 1:30
+)
+
+
+
+projEAE <- addClusters(
+    input = projEAE,
+    reducedDims = "IterativeLSI",
+    method = "Seurat",
+    name = "Clusters",
+    resolution = 0.8
+)
+
+
+projEAE <- addUMAP(
+    ArchRProj = projEAE, 
+    reducedDims = "IterativeLSI", 
+    name = "UMAP", 
+    nNeighbors = 30, 
+    minDist = 0.5, 
+    metric = "cosine"
+)
+
+p1 <- plotEmbedding(ArchRProj = projEAE, colorBy = "cellColData", name = "Sample", embedding = "UMAP")
+p2 <- plotEmbedding(ArchRProj = projEAE, colorBy = "cellColData", name = "Clusters", embedding = "UMAP")
+
+p1 + p2
+
+
+
+
+
+
+
+```
+
+```{r}
+
+write.table( projEAE$cellNames ,file = "EAE_multiomics/EAECtr_multiomics_archR_cellnames.txt", sep="\t",row.names = T, col.names =T, quote = FALSE)
+ 
+
+
+```
+filter cell ids to the u¡ones used in the study
+```{bash}
+perl  recover_ID.pl   EAE_CtrlPeak_multiomics_metadata.celltype.txt   EAECtr_multiomics_archR_cellnames.txt  > ARCHR/EAECtr_multiomics_archR_cellnames.celltype.txt 
+
+ perl  recover_ID.pl   EAE_CtrlPeak_multiomics_metadata.celltype.txt   EAECtr_multiomics_archR_cellnames.txt  | awk '{ print $2"\tRemoved" } ' | grep EAE_Ctr > ARCHR/EAECtr_multiomics_archR_cellnames.remove.txt
+ 
+ perl  recover_ID.pl   EAE_CtrlPeak_multiomics_metadata.sample.txt   EAECtr_multiomics_archR_cellnames.txt  > ARCHR/EAECtr_multiomics_archR_cellnames.sample.txt
+ 
+ perl  recover_ID.pl   EAE_CtrlPeak_multiomics_metadata.replicate.txt   EAECtr_multiomics_archR_cellnames.txt  > ARCHR/EAECtr_multiomics_archR_cellnames.replicate.txt 
+
+cat ARCHR/EAECtr_multiomics_archR_cellnames.replicate.txt ARCHR/EAECtr_multiomics_archR_cellnames.remove.txt > ARCHR/EAECtr_multiomics_archR_metatdata_replicate_f2.txt
+
+
+
+cat ARCHR/EAECtr_multiomics_archR_cellnames.sample.txt ARCHR/EAECtr_multiomics_archR_cellnames.remove.txt > ARCHR/EAECtr_multiomics_archR_metatdata_sample_f2.txt
+
+
+cat ARCHR/EAECtr_multiomics_archR_cellnames.celltype.txt ARCHR/EAECtr_multiomics_archR_cellnames.remove.txt > ARCHR/EAECtr_multiomics_archR_metatdata_celltype_f2.txt
+
+
+```
+
+
+```{r}
+
+celltype <- read.table("EAE_multiomics/EAECtr_multiomics_archR_metatdata_celltype_f2.txt",   stringsAsFactors=F , comment.char = "")
+
+cellNames <- celltype$V1
+
+
+projEAE <- addCellColData(ArchRProj = projEAE, data = paste0(celltype$V2),
+     cells = cellNames, name = "celltype")
+
+
+
+idxPass <- which(projEAE$celltype != "Removed" )
+
+
+cellsPass <- projEAE$cellNames[idxPass]
+projEAE[cellsPass, ]
+
+projEAE <- projEAE[cellsPass, ]
+
+
+#save( projEAE , file="EAE_multiomics/EAECtr_multiomics_archR_ProjEAE_archR.Robj")
+
+```
+
+
+get rna from the multi and integrate
+```{r}
+
+
+EAE_CP.subset <- readRDS("EAE_multiomics/EAE_CtrlPeak_multiomics_120721.rds")
+
+
+
+DefaultAssay(EAE_CP.subset) <- "RNA"
+
+ExpMat <- GetAssayData(object =  EAE_CP.subset , slot = "data" ) 
+
+
+
+EAERNA <- CreateSeuratObject(counts = ExpMat , project = 'EAERNA', meta.data = EAE_CP.subset@meta.data, min.cells = 2)
+EAERNA <- NormalizeData(object = EAERNA)
+EAERNA <- FindVariableFeatures(object = EAERNA, nfeatures = 2000)
+EAERNA <- ScaleData(object = EAERNA)
+EAERNA <- RunPCA(object = EAERNA, npcs = 20, verbose = FALSE)
+EAERNA <- RunUMAP(object = EAERNA, dims = 1:20, nneighbors = 5)
+
+
+
+
+```
+
+scRNAseq integration
+```{r}
+
+
+EAE_CP.subset <- readRDS("EAE_multiomics/EAE_CtrlPeak_multiomics_120721.rds")
+
+
+
+DefaultAssay(EAE_CP.subset) <- "RNA"
+
+projEAE <- addGeneIntegrationMatrix(
+    ArchRProj = projEAE, 
+    useMatrix = "GeneScoreMatrix",
+    matrixName = "GeneIntegrationMatrix",
+    reducedDims = "IterativeLSI",
+    seRNA = EAERNA ,
+    addToArrow = FALSE,
+    groupRNA = "Curated",
+    nameCell = "predictedCell_Un",
+    nameGroup = "predictedGroup_Un",
+    nameScore = "predictedScore_Un"
+)
+
+cM <- as.matrix(confusionMatrix(projEAE$Clusters, projEAE$predictedGroup_Un))
+preClust <- colnames(cM)[apply(cM, 1 , which.max)]
+cbind(preClust, rownames(cM)) #Assignments
+
+unique(unique(projEAE$predictedGroup_Un))
+
+
+```
+
+
+peak calling
+```{r}
+#installed in my path 
+
+cM <- confusionMatrix(projEAE$Clusters , projEAE$celltype)
+labelOld <- rownames(cM)
+labelOld
+
+labelNew <- colnames(cM)[apply(cM, 1, which.max)]
+labelNew
+
+
+
+
+projEAE$Clusters2 <- mapLabels(projEAE$celltype, newLabels = labelNew, oldLabels = labelOld)
+
+
+
+pathToMacs2 <- findMacs2()
+
+projEAE <- addGroupCoverages(ArchRProj = projEAE, groupBy = "celltype" , force = TRUE )
+
+projEAE <- addReproduciblePeakSet(
+    ArchRProj = projEAE, 
+    groupBy = "celltype", 
+    pathToMacs2 = pathToMacs2
+)
+
+getPeakSet(projEAE)
+
+
+projEAE <- addReproduciblePeakSet(
+    ArchRProj = projEAE, 
+    groupBy = "celltype",
+    peakMethod = "Tiles",
+    method = "p"
+)
+
+getPeakSet(projEAE)
+
+
+projEAE <-  projEAE
+
+projEAE <- addPeakMatrix(projEAE)
+
+getAvailableMatrices(projEAE)
+
+#addGeneIntegrationMatrix(projEAE)
+
+
+
+```
+
+coaccesibility
+```{r}
+
+
+projEAE <- addCoAccessibility(
+    ArchRProj = projEAE,
+    reducedDims = "IterativeLSI"
+)
+
+cA <- getCoAccessibility(
+    ArchRProj = projEAE,
+    corCutOff = 0.5,
+    resolution = 1000000,
+    returnLoops = FALSE
+)
+
+cA_track <- getCoAccessibility(
+    ArchRProj = projEAE,
+    corCutOff = 0.5,
+    resolution = 1000000,
+    returnLoops = TRUE
+)
+
+
+
+```
+
+Peak2Gene links
+
+```{r}
+p2g <- getPeak2GeneLinks(
+    ArchRProj = projEAE,
+    corCutOff = 0.45,
+    resolution = 1,
+    returnLoops = F
+)
+
+gr <- metadata(p2g)[[1]]
+peaks_df = as(gr, "data.frame")
+
+gr <- metadata(p2g)[[2]]
+RNA_df = as(gr, "data.frame")
+
+p2g_df = as(p2g, "data.frame")
+
+```
+
+convert iranges to bed
+```{r}
+
+#this are gene-peak links of all the data set
+
+gr <- (p2g)[[1]]
+
+genes_df = as(gr, "data.frame")
+
+write.table( (genes_df), file = "EAE_multiomics/EAECtr_multiomics_peak2GeneLinks_EAECtr_ALL.txt", sep="\t", col.names=TRUE, row.names=FALSE, quote=FALSE )
+
+
+```
+
+- get bedpe files
+- select correlation threshold
+
+```{bash}
+
+
+
+awk '{ split($2,a,":") ; split($3,b,":") ;  split(a[2],c,"-") ; split(b[2],d,"-") ; if ( $6 > 0.6 )   { print $1"\t"$2"\t"$2"\t"$1"\t"$3"\t"$3"\tpeak_"$7"\t"$6"\t.\t." }}'  EAE_multiomics/EAECtr_multiomics_peak2GeneLinks_EAECtr_ALL.txt   > peak2GeneLinks_ALL_EAECtr_multiomics.bedpe
+
+```
