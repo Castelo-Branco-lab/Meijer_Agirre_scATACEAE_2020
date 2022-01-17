@@ -46,6 +46,6 @@ Includes:
 
 https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE166179
 
-Human raw FastQ and CellRanger arc v.2.0.0 BAM files can be access through https://ega-archive.org/ :
+Human raw FastQ and CellRanger arc v.2.0.0 BAM files can be accessed through https://ega-archive.org/ :
 
 EGAS00001005911 
