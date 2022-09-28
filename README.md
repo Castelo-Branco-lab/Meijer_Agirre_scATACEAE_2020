@@ -33,6 +33,15 @@ https://castelobranco.shinyapps.io/hs_ctr_multi_rna Gene expression from scRNA-s
 Link to the datasets through UCSC CELL browser (thanks to Matthew L. Speir , genome.UCSC.edu):
 http://cells.ucsc.edu/?ds=olg-eae-ms
 
+UCSC track hubs (thanks to Matthew L. Speir , genome.UCSC.edu):
+
+Human: 
+https://genome.ucsc.edu/s/mspeir/hg38_pdgfra
+
+Mouse: 
+https://genome.ucsc.edu/s/mspeir/mm10_pdgfra (includes both scMultiomics and scATAC-seq tracks)
+
+
 ## Raw and processed data availability
 
 GEO accession super series GSE166179
