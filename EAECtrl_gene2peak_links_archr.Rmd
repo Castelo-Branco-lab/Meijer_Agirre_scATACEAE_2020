@@ -340,7 +340,7 @@ p2g <- getPeak2GeneLinks(
     ArchRProj = projEAE,
     corCutOff = 0.45,
     resolution = 1,
-    returnLoops = F
+    returnLoops = T
 )
 
 gr <- metadata(p2g)[[1]]
